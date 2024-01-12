@@ -1,0 +1,320 @@
+# To generate an HTML from this spec with redoc-cli
+# Run `npx @redocly/cli build-docs -o sketchySoundsAPI.html api/api-specification.yaml`
+openapi: 3.0.0
+info:
+  title: SketchySounds API
+  description: API to generate musical scores from uploaded sketches
+  version: "0.0.1"
+  contact:
+    email: kremlingph95027@th-nuernberg.de
+
+servers:
+  - url: http://localhost:4242
+    description: Local server
+
+paths:
+  /upload:
+    post:
+      summary: Uploads a sketch and generates a transaction id
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                sketch:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: The image was received successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Image received
+                  transaction_id:
+                    type: string
+                    example: 00000000-0000-0000-0000-000000000000
+        '400':
+          description: Input file was not sent or unable to determine file format
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "No input file was sent"
+        '404':
+          description: File not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "The input file was not found"
+        '413':
+          description: Image file size exceeds 20 MB
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Image file size exceeds 20 MB"
+
+  /upload-fast:
+    post:
+      summary: Uploads a sketch and generates a transaction id. The image generation is much faster with this endpoint. But the quality is more poor
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                sketch:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: The image was received successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Image received
+                  transaction_id:
+                    type: string
+                    example: 00000000-0000-0000-0000-000000000000
+        '400':
+          description: Input file was not sent or unable to determine file format
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "No input file was sent"
+        '404':
+          description: File not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "The input file was not found"
+        '413':
+          description: Image file size exceeds 20 MB
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Image file size exceeds 20 MB"
+
+  /analysis/{transaction_id}:
+    get:
+      summary: Retrieves the analysis of the uploaded image
+      parameters:
+        - in: path
+          name: transaction_id
+          required: true
+          schema:
+            type: string
+            example: 00000000-0000-0000-0000-000000000000
+      responses:
+        '200':
+          description: Analysis of the image
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  transaction_id:
+                    type: string
+                    example: 00000000-0000-0000-0000-000000000000
+                  analysis:
+                    type: array
+                    items:
+                      type: string
+                    description: List of attributes detected in the sketch
+                    example: 
+                    - high
+                    - loud
+        '204':
+          description: Transaction is running
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "There is no content yet"
+        '404':
+          description: Transaction ID not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Transaction ID not found or invalid"
+        '409':
+          description: Transaction is in error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "The transaction errored out, please use error endpoint"
+
+  /score/{transaction_id}:
+    get:
+      summary: Retrieves the musical score generated from the uploaded image
+      parameters:
+        - in: path
+          name: transaction_id
+          required: true
+          schema:
+            type: string
+            example: 00000000-0000-0000-0000-000000000000
+      responses:
+        '200':
+          description: Generated musical score
+          content:
+            image/jpeg:
+              schema:
+                type: string
+                format: binary
+        '204':
+          description: Transaction is running
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "There is no content yet"
+        '404':
+          description: Transaction ID not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Transaction ID not found or invalid"
+        '409':
+          description: Transaction is in error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "The transaction errored out, please use error endpoint"
+
+  /status/{transaction_id}:
+    get:
+      summary: Checks the status of the transaction
+      parameters:
+        - in: path
+          name: transaction_id
+          required: true
+          schema:
+            type: string
+            example: 00000000-0000-0000-0000-000000000000
+      responses:
+        '200':
+          description: Status of the transaction
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  transaction_id:
+                    type: string
+                    example: 00000000-0000-0000-0000-000000000000
+                  status:
+                    type: string
+                    enum: [Success, Error, Running analysis, Running generation, Received, Idling]
+                    example: Success
+        '404':
+          description: Transaction ID not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Transaction ID not found or invalid"
+
+  /error/{transaction_id}:
+    get:
+      summary: Provides error information on the transaction
+      parameters:
+        - in: path
+          name: transaction_id
+          required: true
+          schema:
+            type: string
+            example: 00000000-0000-0000-0000-000000000000
+      responses:
+        '200':
+          description: Error information on the transaction
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  transaction_id:
+                    type: string
+                    example: 00000000-0000-0000-0000-000000000000
+                  error:
+                    type: string
+                    example: OpenAI denied the request. Maybe unallowed content?
+        '404':
+          description: Transaction ID not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Transaction ID not found or invalid"
+        '409':
+          description: Transaction is not in error state
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "This transaction has no errors"
