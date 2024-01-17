@@ -15,6 +15,7 @@ from diffusers import StableDiffusionImg2ImgPipeline
 from compel import Compel
 import torch
 import io
+import re
 
 
 def get_api_key():
@@ -67,8 +68,9 @@ def call_openai_vision(transaction_id, use_dall_e):
     Achte auf verschiedene Farben und interpretiere diese als eigene Musiker.
     Achte besonders auf folgende Eigenschaften und baue sie falls passend ein: abstrakt, chaotisch, duester, freundlich,
     geschwungen, gleichmaessig, hoch, minimalistisch, tief. Beschränke dich jedoch nicht auf diese Eigenschaften.
-    Gib das Ergebnis in folgendem Format aus: 'Farbe Form (Position): Eigenschaften'. 
-    #Beispiel: 'Gelbe Linie (oben rechts): hoch'"""
+    Gib das Ergebnis in folgendem Format aus: 
+    'Farbe Form (Position): Eigenschaften; Farbe Form (Position): Eigenschaften;'. 
+    Beispiel: 'Gelbe Linie (oben rechts): hoch; Blaue Sonne (unten links): abstrakt, geschwungen;'"""
                     },
                     {
                         "type": "image_url",
@@ -83,14 +85,11 @@ def call_openai_vision(transaction_id, use_dall_e):
     )
 
     logging.debug('OpenAI Vision Request successful')
-    """
-    Schwarzer Hintergrund
-Grüne Linien (Mitte): chaotisch, geschwungen, freundlich
-Blaue Linie/Gekritzel (unten Mitte): chaotisch, abstrakt
-Lila Streifen (mittig): gleichmäßig, düster
-Blaue Flecken (überall): abstrakt, minimalistisch
-Gelber Blitz (oben rechts): hoch
-    """
+
+    keywords = re.findall(r"\): (.*?);", response.choices[0].message.content)
+    keywords_list = [keyword.strip() for k in keywords for keyword in k.split(",")]
+    transactions[transaction_id]["keywords"] = keywords_list
+
     transactions[transaction_id]["analysis"] = response.choices[0].message.content
     transactions[transaction_id]["status"] = StatusCodes.IDLING.value
 

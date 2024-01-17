@@ -84,6 +84,7 @@ def handle_uploaded_image(use_dall_e):
         "status": StatusCodes.RECEIVED.value,
         "image": img_base64,
         "analysis": None,
+        "keywords": [],
         "score": None,
         "error": None
     }
@@ -123,6 +124,24 @@ def get_analysis(transaction_id):
         return jsonify({"message": Messages.TRANSACTION_IN_ERROR}), 409
     if status == StatusCodes.RUNNING_ANALYSIS.value or status == StatusCodes.RECEIVED.value:
         logging.debug('Cancelling analysis request because transaction has no content')
+        return jsonify({"message": Messages.NO_CONTENT}), 204
+
+    return jsonify({"transaction_id": transaction_id, "analysis": transactions[transaction_id]["keywords"]}), 200
+
+
+@app.route(f'{contextRoot}/analysis-intern/<transaction_id>', methods=['GET'])
+def get_analysis(transaction_id):
+    logging.info('Received analysis-intern request')
+    if transaction_id not in transactions:
+        logging.debug(f'Cancelling analysis-intern request because no transaction with id {transaction_id} was found')
+        return jsonify({"error": Messages.TRANSACTION_NOT_FOUND_OR_INVALID}), 404
+
+    status = transactions[transaction_id]["status"]
+    if status == StatusCodes.ERROR.value:
+        logging.debug('Cancelling analysis-intern request because transaction is in error')
+        return jsonify({"message": Messages.TRANSACTION_IN_ERROR}), 409
+    if status == StatusCodes.RUNNING_ANALYSIS.value or status == StatusCodes.RECEIVED.value:
+        logging.debug('Cancelling analysis-intern request because transaction has no content')
         return jsonify({"message": Messages.NO_CONTENT}), 204
 
     return jsonify({"transaction_id": transaction_id, "analysis": transactions[transaction_id]["analysis"]}), 200
