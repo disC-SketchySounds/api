@@ -210,9 +210,8 @@ def store_image(url, transaction_id):
     if response.status_code == 200:
         image_bytes = io.BytesIO(response.content)
         image = Image.open(image_bytes)
-        resized_image = image.resize((512, 512))
         buffered = io.BytesIO()
-        resized_image.save(buffered, format="JPEG")
+        image.save(buffered, format="PNG")
         base64_encoded_image = base64.b64encode(buffered.getvalue()).decode()
 
         transactions[transaction_id]["score"] = base64_encoded_image

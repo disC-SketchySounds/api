@@ -152,9 +152,9 @@ def get_score(transaction_id):
 
     return send_file(
         img_byte_arr,
-        mimetype='image/jpeg',
+        mimetype='image/png',
         as_attachment=True,
-        download_name='score.jpg'
+        download_name='score.png'
     ), 200
 
 
