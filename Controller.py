@@ -130,7 +130,7 @@ def get_analysis(transaction_id):
 
 
 @app.route(f'{contextRoot}/analysis-intern/<transaction_id>', methods=['GET'])
-def get_analysis(transaction_id):
+def get_analysis_intern(transaction_id):
     logging.info('Received analysis-intern request')
     if transaction_id not in transactions:
         logging.debug(f'Cancelling analysis-intern request because no transaction with id {transaction_id} was found')
