@@ -1,12 +1,15 @@
 import base64
 import configparser
 from io import BytesIO
+from threading import Thread
 
 import requests
 from torchvision.transforms import ToTensor
 
 from PIL import Image
 from openai import OpenAI
+from transformers import AutoProcessor, MusicgenForConditionalGeneration
+
 from StatusCodes import StatusCodes
 from Transactions import transactions
 from Messages import Messages
@@ -16,6 +19,7 @@ from compel import Compel
 import torch
 import io
 import re
+import scipy
 
 
 def get_api_key():
@@ -222,6 +226,13 @@ def call_dall_e(transaction_id):
         transactions[transaction_id]["error"] = Messages.ERROR_DOWNLOADING_FILE
         transactions[transaction_id]["status"] = StatusCodes.ERROR.value
 
+    try:
+        thread = Thread(target=generate_music, args=transaction_id)
+        thread.start()
+    except Exception as e:
+        logging.error(f'Caught error while generating music: {e}')
+        transactions[transaction_id]["musicStatus"] = StatusCodes.ERROR.value
+
 
 def store_image(url, transaction_id):
     """
@@ -245,3 +256,35 @@ def store_image(url, transaction_id):
         logging.error("Error while downloading image")
         transactions[transaction_id]["error"] = Messages.ERROR_DOWNLOADING_FILE
         transactions[transaction_id]["status"] = StatusCodes.ERROR.value
+
+
+def generate_music(transaction_id):
+    logging.info("Starting music generation")
+
+    transactions[transaction_id]["musicStatus"] = StatusCodes.RUNNING_GENERATION.value
+
+    processor = AutoProcessor.from_pretrained("facebook/musicgen-small")
+    model = MusicgenForConditionalGeneration.from_pretrained("facebook/musicgen-small")
+
+    analysis = transactions[transaction_id]['analysis']
+    generation_prompt = f"Musikstück basierend auf einer Partitur mit folgenden Elementen und Eigenschaften: {analysis}"
+    inputs = processor(
+        text=[generation_prompt],
+        padding=True,
+        return_tensors="pt"
+    )
+
+    audio_values = model.generate(**inputs, do_sample=True, guidance_scale=3, max_new_tokens=1024)
+    audio_data = audio_values[0, 0].numpy()
+    sampling_rate = model.config.audio_encoder.sampling_rate
+
+    with io.BytesIO() as audio_buffer:
+        scipy.io.wavfile.write(audio_buffer, rate=sampling_rate, data=audio_data)
+        audio_buffer.seek(0)
+        audio_bytes = audio_buffer.read()
+
+    transactions[transaction_id]["generatedMusic"] = audio_bytes
+
+    transactions[transaction_id]["musicStatus"] = StatusCodes.SUCCESS.value
+
+    logging.info("Music generation done")
