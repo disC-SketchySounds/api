@@ -116,7 +116,7 @@ def get_analysis(transaction_id):
     logging.info('Received analysis request')
     if transaction_id not in transactions:
         logging.debug(f'Cancelling analysis request because no transaction with id {transaction_id} was found')
-        return jsonify({"error": Messages.TRANSACTION_NOT_FOUND_OR_INVALID}), 404
+        return jsonify({"message": Messages.TRANSACTION_NOT_FOUND_OR_INVALID}), 404
 
     status = transactions[transaction_id]["status"]
     if status == StatusCodes.ERROR.value:
@@ -134,7 +134,7 @@ def get_analysis_intern(transaction_id):
     logging.info('Received analysis-intern request')
     if transaction_id not in transactions:
         logging.debug(f'Cancelling analysis-intern request because no transaction with id {transaction_id} was found')
-        return jsonify({"error": Messages.TRANSACTION_NOT_FOUND_OR_INVALID}), 404
+        return jsonify({"message": Messages.TRANSACTION_NOT_FOUND_OR_INVALID}), 404
 
     status = transactions[transaction_id]["status"]
     if status == StatusCodes.ERROR.value:
@@ -152,7 +152,7 @@ def get_score(transaction_id):
     logging.info('Received score request')
     if transaction_id not in transactions:
         logging.debug(f'Cancelling score request because no transaction with id {transaction_id} was found')
-        return jsonify({"error": Messages.TRANSACTION_NOT_FOUND_OR_INVALID}), 404
+        return jsonify({"message": Messages.TRANSACTION_NOT_FOUND_OR_INVALID}), 404
 
     status = transactions[transaction_id]["status"]
     if status == StatusCodes.ERROR.value:
@@ -190,7 +190,7 @@ def get_status(transaction_id):
     logging.info('Received status request')
     if transaction_id not in transactions:
         logging.debug(f'Cancelling status request because no transaction with id {transaction_id} was found')
-        return jsonify({"error": Messages.TRANSACTION_NOT_FOUND_OR_INVALID}), 404
+        return jsonify({"message": Messages.TRANSACTION_NOT_FOUND_OR_INVALID}), 404
 
     return jsonify({"transaction_id": transaction_id, "status": transactions[transaction_id]["status"]}), 200
 
@@ -200,12 +200,12 @@ def get_error(transaction_id):
     logging.info('Received error request')
     if transaction_id not in transactions:
         logging.debug(f'Cancelling error request because no transaction with id {transaction_id} was found')
-        return jsonify({"error": Messages.TRANSACTION_NOT_FOUND_OR_INVALID}), 404
+        return jsonify({"message": Messages.TRANSACTION_NOT_FOUND_OR_INVALID}), 404
 
     status = transactions[transaction_id]["status"]
     if status != StatusCodes.ERROR:
         logging.debug('Cancelling error request because transaction is not in error')
-        return jsonify({"error": Messages.NO_ERRORS}), 409
+        return jsonify({"message": Messages.NO_ERRORS}), 409
 
     return jsonify({"transaction_id": transaction_id, "error": transactions[transaction_id]["error"]}), 200
 

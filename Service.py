@@ -53,44 +53,56 @@ def call_openai_vision(transaction_id, use_dall_e):
 
     logging.info('Calling OpenAI Vision')
 
-    response = open_ai_client.chat.completions.create(
-        model="gpt-4-vision-preview",
-        messages=[
-            {
-                "role": "user",
-                "content": [
-                    {
-                        "type": "text",
-                        "text": """Als musikalische Bilderkennung
-    analysiere dieses Bild auf Basis seiner visuellen Eigenschaften, die für die Generierung
-    einer musikalischen Partitur relevant sein könnten
-    wobei du die gefundenen Eigenschaften in einer komma-getrennten Liste herausschreibst.
-    Achte auf verschiedene Farben und interpretiere diese als eigene Musiker.
-    Achte besonders auf folgende Eigenschaften und baue sie falls passend ein: abstrakt, chaotisch, duester, freundlich,
-    geschwungen, gleichmaessig, hoch, minimalistisch, tief. Beschränke dich jedoch nicht auf diese Eigenschaften.
-    Gib das Ergebnis in folgendem Format aus: 
-    'Farbe Form (Position): Eigenschaften; Farbe Form (Position): Eigenschaften;'. 
-    Beispiel: 'Gelbe Linie (oben rechts): hoch; Blaue Sonne (unten links): abstrakt, geschwungen;'"""
-                    },
-                    {
-                        "type": "image_url",
-                        "image_url": {
-                            "url": f"data:image/jpeg;base64,{image}"
-                        }
-                    },
-                ],
-            }
-        ],
-        max_tokens=300,
-    )
+    # response = open_ai_client.chat.completions.create(
+    #     model="gpt-4-vision-preview",
+    #     messages=[
+    #         {
+    #             "role": "user",
+    #             "content": [
+    #                 {
+    #                     "type": "text",
+    #                     "text": """Als musikalische Bilderkennung
+    # analysiere dieses Bild auf Basis seiner visuellen Eigenschaften, die für die Generierung
+    # einer musikalischen Partitur relevant sein könnten
+    # wobei du die gefundenen Eigenschaften in einer komma-getrennten Liste herausschreibst.
+    # Achte auf verschiedene Farben und interpretiere diese als eigene Musiker.
+    # Achte besonders auf folgende Eigenschaften und baue sie falls passend ein: abstrakt, chaotisch, duester, freundlich,
+    # geschwungen, gleichmaessig, hoch, minimalistisch, tief. Beschränke dich jedoch nicht auf diese Eigenschaften.
+    # Gib das Ergebnis in folgendem Format aus:
+    # 'Farbe Form (Position): Eigenschaften; Farbe Form (Position): Eigenschaften;'.
+    # Beispiel: 'Gelbe Linie (oben rechts): hoch; Blaue Sonne (unten links): abstrakt, geschwungen;'"""
+    #                 },
+    #                 {
+    #                     "type": "image_url",
+    #                     "image_url": {
+    #                         "url": f"data:image/jpeg;base64,{image}"
+    #                     }
+    #                 },
+    #             ],
+    #         }
+    #     ],
+    #     max_tokens=300,
+    # )
+
+    response = """
+        Gelbe Linie (oben rechts): abstrakt, dynamisch;
+        Blaue Sonne (unten links): spitz zulaufend, minimalistisch, akzentuiert;
+    """
 
     logging.debug('OpenAI Vision Request successful')
 
-    keywords = re.findall(r"\): (.*?);", response.choices[0].message.content)
+    # keywords = re.findall(r"\): (.*?);", response.choices[0].message.content)
+    # keywords_list = [keyword.strip() for k in keywords for keyword in k.split(",")]
+    # transactions[transaction_id]["keywords"] = keywords_list
+    #
+    # transactions[transaction_id]["analysis"] = response.choices[0].message.content
+    # transactions[transaction_id]["status"] = StatusCodes.IDLING.value
+
+    keywords = re.findall(r"\): (.*?);", response)
     keywords_list = [keyword.strip() for k in keywords for keyword in k.split(",")]
     transactions[transaction_id]["keywords"] = keywords_list
 
-    transactions[transaction_id]["analysis"] = response.choices[0].message.content
+    transactions[transaction_id]["analysis"] = response
     transactions[transaction_id]["status"] = StatusCodes.IDLING.value
 
     try:
@@ -123,11 +135,11 @@ def call_stable_diffusion(transaction_id):
     pipe.enable_model_cpu_offload()
     pipe.enable_xformers_memory_efficient_attention()
 
-    #pipe.load_lora_weights(lora_folder, weight_name=lora_weights_1_name, adapter_name=lora_weights_1_name)
-    #pipe.load_lora_weights(lora_folder, weight_name=lora_weights_2_name, adapter_name=lora_weights_2_name)
-    #pipe.load_lora_weights(lora_folder, weight_name=lora_weights_3_name, adapter_name=lora_weights_3_name)
+    # pipe.load_lora_weights(lora_folder, weight_name=lora_weights_1_name, adapter_name=lora_weights_1_name)
+    # pipe.load_lora_weights(lora_folder, weight_name=lora_weights_2_name, adapter_name=lora_weights_2_name)
+    # pipe.load_lora_weights(lora_folder, weight_name=lora_weights_3_name, adapter_name=lora_weights_3_name)
 
-    #pipe.set_adapters([lora_weights_1_name, lora_weights_2_name, lora_weights_3_name], adapter_weights=[1.0, 1.0, 1.0])
+    # pipe.set_adapters([lora_weights_1_name, lora_weights_2_name, lora_weights_3_name], adapter_weights=[1.0, 1.0, 1.0])
 
     prompt = f"""
         Schwarzer Hintergrund
@@ -150,7 +162,7 @@ def call_stable_diffusion(transaction_id):
         image=tensor_image,
         strength=0.75,
         guidance_scale=7.5,
-#        cross_attention_kwargs={"scale": 1.0}
+        #        cross_attention_kwargs={"scale": 1.0}
     ).images[0]
     img_byte_arr = io.BytesIO()
     image.save(img_byte_arr, format='JPEG')
@@ -180,21 +192,35 @@ def call_dall_e(transaction_id):
             {analysis}
             """
 
-    response = open_ai_client.images.generate(
-        model="dall-e-3",
-        prompt=prompt,
-        size="1024x1024",
-        quality="standard",
-        n=1,
-    )
+    # response = open_ai_client.images.generate(
+    #     model="dall-e-3",
+    #     prompt=prompt,
+    #     size="1024x1024",
+    #     quality="standard",
+    #     n=1,
+    # )
+    #
+    # image_url = response.data[0].url
+    #
+    # logging.info(f"Got answer form DALL-E with url {image_url}")
+    #
+    # store_image(image_url, transaction_id)
+    #
+    # logging.debug('DALL-E Request successful')
 
-    image_url = response.data[0].url
+    try:
+        with open("score.png", "rb") as image_file:
+            image = Image.open(image_file)
+            buffered = io.BytesIO()
+            image.save(buffered, format="PNG")
+            base64_encoded_image = base64.b64encode(buffered.getvalue()).decode()
 
-    logging.info(f"Got answer form DALL-E with url {image_url}")
-
-    store_image(image_url, transaction_id)
-
-    logging.debug('DALL-E Request successful')
+            transactions[transaction_id]["score"] = base64_encoded_image
+            transactions[transaction_id]["status"] = StatusCodes.SUCCESS.value
+    except IOError as e:
+        logging.error(f"Error while opening image file: {e}")
+        transactions[transaction_id]["error"] = Messages.ERROR_DOWNLOADING_FILE
+        transactions[transaction_id]["status"] = StatusCodes.ERROR.value
 
 
 def store_image(url, transaction_id):
