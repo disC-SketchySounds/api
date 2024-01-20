@@ -9,7 +9,7 @@ from threading import Thread
 import logging
 
 from StatusCodes import StatusCodes
-from Service import call_openai_vision
+from Service import call_openai_vision, generate_music
 from Transactions import transactions
 from Messages import Messages
 
@@ -86,7 +86,9 @@ def handle_uploaded_image(use_dall_e):
         "analysis": None,
         "keywords": [],
         "score": None,
-        "error": None
+        "error": None,
+        "generatedMusic": None,
+        "musicStatus": StatusCodes.IDLING.value
     }
 
     # Start async task
@@ -208,6 +210,35 @@ def get_error(transaction_id):
         return jsonify({"error": Messages.NO_ERRORS}), 409
 
     return jsonify({"transaction_id": transaction_id, "error": transactions[transaction_id]["error"]}), 200
+
+
+@app.route(f'{contextRoot}/music/<transaction_id>', methods=['GET'])
+def music(transaction_id):
+    logging.info('Received music request')
+    if transaction_id not in transactions:
+        logging.debug(f'Cancelling music request because no transaction with id {transaction_id} was found')
+        return jsonify({"error": Messages.TRANSACTION_NOT_FOUND_OR_INVALID}), 404
+
+    status = transactions[transaction_id]["musicStatus"]
+    if status == StatusCodes.ERROR.value:
+        logging.debug('Cancelling music request because transaction is in error')
+        return jsonify({"message": Messages.TRANSACTION_IN_ERROR}), 409
+    if (status == StatusCodes.RUNNING_GENERATION.value or
+            status == StatusCodes.IDLING.value):
+        logging.debug('Cancelling music request because transaction has no content')
+        return jsonify({"message": Messages.NO_CONTENT}), 204
+
+    audio_bytes = transactions[transaction_id]["generatedMusic"]
+
+    return_data = io.BytesIO(audio_bytes)
+    return_data.seek(0)
+
+    return send_file(
+        return_data,
+        mimetype='audio/wav',
+        as_attachment=True,
+        download_name='music.wav'
+    ), 200
 
 
 if __name__ == '__main__':
