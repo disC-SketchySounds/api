@@ -31,6 +31,7 @@
     4. `pip3 install -U xformers --index-url https://download.pytorch.org/whl/cu118`
 11. `pip install accelerate`
 12. `pip install compel`
+13. `pip install scipy`
 
 ## Einrichtung
 1. Ordner "api" & "runAPI.sh" hochladen
