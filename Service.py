@@ -201,7 +201,7 @@ def call_dall_e(transaction_id):
     logging.debug('DALL-E Request successful')
 
     try:
-        thread = Thread(target=generate_music, args=transaction_id)
+        thread = Thread(target=generate_music, args=[transaction_id])
         thread.start()
     except Exception as e:
         logging.error(f'Caught error while generating music: {e}')
