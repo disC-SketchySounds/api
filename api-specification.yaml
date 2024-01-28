@@ -1,5 +1,8 @@
 # To generate an HTML from this spec with redoc-cli
-# Run `npx @redocly/cli build-docs -o sketchySoundsAPI.html api/api-specification.yaml`
+# Run `npx @redocly/cli build-docs -o sketchySoundsAPI.html api-specification.yaml`
+######################################################################################
+#    Specification is also available at https://kremling.de/sketchySoundsAPI.html    #
+######################################################################################
 openapi: 3.0.0
 info:
   title: SketchySounds API
@@ -13,9 +16,24 @@ servers:
     description: Local server
 
 paths:
+  /healthcheck:
+    get:
+      summary: Health Check of the API
+      responses:
+        '200':
+          description: API is up and running
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: up
+
   /upload:
     post:
-      summary: Uploads a sketch and generates a transaction id
+      summary: Uploads an image for processing
       requestBody:
         required: true
         content:
@@ -23,12 +41,12 @@ paths:
             schema:
               type: object
               properties:
-                sketch:
+                inputFile:
                   type: string
                   format: binary
       responses:
         '200':
-          description: The image was received successful
+          description: Image received and processing started
           content:
             application/json:
               schema:
@@ -36,12 +54,12 @@ paths:
                 properties:
                   message:
                     type: string
-                    example: Image received
+                    example: Bild empfangen
                   transaction_id:
                     type: string
                     example: 00000000-0000-0000-0000-000000000000
         '400':
-          description: Input file was not sent or unable to determine file format
+          description: No input file sent or format could not be determined
           content:
             application/json:
               schema:
@@ -49,9 +67,9 @@ paths:
                 properties:
                   message:
                     type: string
-                    example: "No input file was sent"
+                    example: "Keine Eingabedatei gesendet"
         '404':
-          description: File not found
+          description: No input file found
           content:
             application/json:
               schema:
@@ -59,9 +77,9 @@ paths:
                 properties:
                   message:
                     type: string
-                    example: "The input file was not found"
+                    example: "Die Eingabedatei wurde nicht gefunden"
         '413':
-          description: Image file size exceeds 20 MB
+          description: File size exceeds 20MB
           content:
             application/json:
               schema:
@@ -69,11 +87,11 @@ paths:
                 properties:
                   message:
                     type: string
-                    example: "Image file size exceeds 20 MB"
+                    example: "Bilddateigröße überschreitet 20 MB"
 
-  /upload-fast:
+  /upload-dall-e:
     post:
-      summary: Uploads a sketch and generates a transaction id. The image generation is much faster with this endpoint. But the quality is more poor
+      summary: Uploads an image for processing with DALL-E model
       requestBody:
         required: true
         content:
@@ -81,12 +99,12 @@ paths:
             schema:
               type: object
               properties:
-                sketch:
+                inputFile:
                   type: string
                   format: binary
       responses:
         '200':
-          description: The image was received successful
+          description: Image received and processing started
           content:
             application/json:
               schema:
@@ -94,12 +112,12 @@ paths:
                 properties:
                   message:
                     type: string
-                    example: Image received
+                    example: Bild empfangen
                   transaction_id:
                     type: string
                     example: 00000000-0000-0000-0000-000000000000
         '400':
-          description: Input file was not sent or unable to determine file format
+          description: No input file sent or format could not be determined
           content:
             application/json:
               schema:
@@ -107,9 +125,9 @@ paths:
                 properties:
                   message:
                     type: string
-                    example: "No input file was sent"
+                    example: "Keine Eingabedatei gesendet"
         '404':
-          description: File not found
+          description: No input file found
           content:
             application/json:
               schema:
@@ -117,9 +135,9 @@ paths:
                 properties:
                   message:
                     type: string
-                    example: "The input file was not found"
+                    example: "Die Eingabedatei wurde nicht gefunden"
         '413':
-          description: Image file size exceeds 20 MB
+          description: File size exceeds 20MB
           content:
             application/json:
               schema:
@@ -127,11 +145,11 @@ paths:
                 properties:
                   message:
                     type: string
-                    example: "Image file size exceeds 20 MB"
+                    example: "Bilddateigröße überschreitet 20 MB"
 
   /analysis/{transaction_id}:
     get:
-      summary: Retrieves the analysis of the uploaded image
+      summary: Retrieves analysis for a given transaction
       parameters:
         - in: path
           name: transaction_id
@@ -155,21 +173,13 @@ paths:
                     items:
                       type: string
                     description: List of attributes detected in the sketch
-                    example: 
-                    - high
-                    - loud
+                    example:
+                    - hoch
+                    - laut
         '204':
-          description: Transaction is running
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "There is no content yet"
+          description: No content available yet for this transaction
         '404':
-          description: Transaction ID not found
+          description: Transaction ID not found or invalid
           content:
             application/json:
               schema:
@@ -177,9 +187,9 @@ paths:
                 properties:
                   message:
                     type: string
-                    example: "Transaction ID not found or invalid"
+                    example: "Transaktion nicht gefunden oder ungültig"
         '409':
-          description: Transaction is in error
+          description: Transaction in error state
           content:
             application/json:
               schema:
@@ -187,11 +197,59 @@ paths:
                 properties:
                   message:
                     type: string
-                    example: "The transaction errored out, please use error endpoint"
+                    example: "Transaktion fehlgeschlagen, bitte Fehler-Endpunkt verwenden"
+
+  /analysis-intern/{transaction_id}:
+    get:
+      summary: Retrieves internal analysis (full text) for a given transaction
+      parameters:
+        - in: path
+          name: transaction_id
+          required: true
+          schema:
+            type: string
+            example: 00000000-0000-0000-0000-000000000000
+      responses:
+        '200':
+          description: Analysis of the image
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  transaction_id:
+                    type: string
+                    example: 00000000-0000-0000-0000-000000000000
+                  analysis:
+                    type: string
+                    description: Full text description of the sketch
+                    example: "Gelbe Sonne (oben links): geschwungen, abstrakt; Blaues Haus (Mitte): tief;"
+        '204':
+          description: No content available yet for this transaction
+        '404':
+          description: Transaction ID not found or invalid
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Transaktion nicht gefunden oder ungültig"
+        '409':
+          description: Transaction in error state
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Transaktion fehlgeschlagen, bitte Fehler-Endpunkt verwenden"
 
   /score/{transaction_id}:
     get:
-      summary: Retrieves the musical score generated from the uploaded image
+      summary: Retrieves musical score for a given transaction
       parameters:
         - in: path
           name: transaction_id
@@ -208,17 +266,9 @@ paths:
                 type: string
                 format: binary
         '204':
-          description: Transaction is running
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "There is no content yet"
+          description: No content available yet for this transaction
         '404':
-          description: Transaction ID not found
+          description: Transaction ID not found or invalid
           content:
             application/json:
               schema:
@@ -226,9 +276,9 @@ paths:
                 properties:
                   message:
                     type: string
-                    example: "Transaction ID not found or invalid"
+                    example: "Transaktion nicht gefunden oder ungültig"
         '409':
-          description: Transaction is in error
+          description: Transaction in error state
           content:
             application/json:
               schema:
@@ -236,11 +286,33 @@ paths:
                 properties:
                   message:
                     type: string
-                    example: "The transaction errored out, please use error endpoint"
+                    example: "Transaktion fehlgeschlagen, bitte Fehler-Endpunkt verwenden"
+
+  /last-score:
+    get:
+      summary: Retrieves the last generated musical score
+      responses:
+        '200':
+          description: Last generated musical score returned
+          content:
+            image/jpeg:
+              schema:
+                type: string
+                format: binary
+        '404':
+          description: No last transaction found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Die letzte Transaktion wurde nicht gefunden"
 
   /status/{transaction_id}:
     get:
-      summary: Checks the status of the transaction
+      summary: Retrieves status of a given transaction
       parameters:
         - in: path
           name: transaction_id
@@ -264,7 +336,7 @@ paths:
                     enum: [Success, Error, Running analysis, Running generation, Received, Idling]
                     example: Success
         '404':
-          description: Transaction ID not found
+          description: Transaction ID not found or invalid
           content:
             application/json:
               schema:
@@ -272,11 +344,11 @@ paths:
                 properties:
                   message:
                     type: string
-                    example: "Transaction ID not found or invalid"
+                    example: "Transaktion nicht gefunden oder ungültig"
 
   /error/{transaction_id}:
     get:
-      summary: Provides error information on the transaction
+      summary: Retrieves error information for a given transaction
       parameters:
         - in: path
           name: transaction_id
@@ -299,15 +371,15 @@ paths:
                     type: string
                     example: OpenAI denied the request. Maybe unallowed content?
         '404':
-          description: Transaction ID not found
+          description: Transaction ID not found or invalid
           content:
             application/json:
               schema:
                 type: object
                 properties:
-                  message:
+                  error:
                     type: string
-                    example: "Transaction ID not found or invalid"
+                    example: "Transaktion nicht gefunden oder ungültig"
         '409':
           description: Transaction is not in error state
           content:
@@ -315,6 +387,47 @@ paths:
               schema:
                 type: object
                 properties:
+                  error:
+                    type: string
+                    example: "Diese Transaktion hat keine Fehler"
+
+  /music/{transaction_id}:
+    get:
+      summary: Retrieves generated music for a given transaction
+      parameters:
+        - in: path
+          name: transaction_id
+          required: true
+          schema:
+            type: string
+            example: 00000000-0000-0000-0000-000000000000
+      responses:
+        '200':
+          description: Generated music
+          content:
+            audio/wav:
+              schema:
+                type: string
+                format: binary
+        '204':
+          description: No music content available yet for this transaction
+        '404':
+          description: Transaction ID not found or invalid
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
                   message:
                     type: string
-                    example: "This transaction has no errors"
+                    example: "Transaktion nicht gefunden oder ungültig"
+        '409':
+          description: Transaction in error state while generating music
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Transaktion fehlgeschlagen, bitte Fehler-Endpunkt verwenden"

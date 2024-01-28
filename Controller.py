@@ -192,7 +192,7 @@ def get_status(transaction_id):
     logging.info('Received status request')
     if transaction_id not in transactions:
         logging.debug(f'Cancelling status request because no transaction with id {transaction_id} was found')
-        return jsonify({"error": Messages.TRANSACTION_NOT_FOUND_OR_INVALID}), 404
+        return jsonify({"message": Messages.TRANSACTION_NOT_FOUND_OR_INVALID}), 404
 
     return jsonify({"transaction_id": transaction_id, "status": transactions[transaction_id]["status"]}), 200
 
